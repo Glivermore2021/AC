@@ -33,6 +33,21 @@ jobs:
         # Include Emscripten header in main.cpp
         echo -e "\n#ifdef __EMSCRIPTEN__\n#include <emscripten.h>\n#endif\n" >> source/src/main.cpp
 
+        # Stub ENet types/functions to avoid missing enet.h
+        echo -e "\n#ifdef __EMSCRIPTEN__\n\
+typedef int ENetHost;\n\
+typedef int ENetAddress;\n\
+typedef int ENetPeer;\n\
+#define enet_initialize() 0\n\
+#define enet_deinitialize()\n\
+#define enet_host_create(...) 0\n\
+#define enet_host_destroy(host)\n\
+#define enet_address_set_host(address, name)\n\
+#define enet_address_set_port(address, port)\n\
+#define enet_host_connect(host, address, channels, data) 0\n\
+#define enet_host_service(host, event, timeout) 0\n\
+#endif\n" >> source/src/clientgame.cpp
+
     - name: Build AssaultCube to WebAssembly
       run: |
         mkdir -p web-build
