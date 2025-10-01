@@ -37,11 +37,10 @@ jobs:
       run: |
         mkdir -p web-build
         emcc \
+          $(find source/src/engine -name "*.cpp") \
           source/src/main.cpp \
           source/src/clientgame.cpp \
-          source/src/engine/*.cpp \
-          -I source/src \
-          -I source/src/engine \
+          -I source/src -I source/src/engine \
           --preload-file source/packages \
           -O3 -s ASSERTIONS=0 -s ALLOW_MEMORY_GROWTH=1 \
           -s MODULARIZE=1 -s EXPORT_ES6=1 -s ENVIRONMENT=web \
