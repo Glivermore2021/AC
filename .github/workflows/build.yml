@@ -25,6 +25,23 @@ jobs:
     - name: Verify emcc
       run: emcc -v
 
+    - name: Prepare fake ENet include
+      run: |
+        mkdir -p fake_includes/enet
+        cat > fake_includes/enet/enet.h <<'EOF'
+        typedef int ENetHost;
+        typedef int ENetAddress;
+        typedef int ENetPeer;
+        #define enet_initialize() 0
+        #define enet_deinitialize()
+        #define enet_host_create(...) 0
+        #define enet_host_destroy(host)
+        #define enet_address_set_host(address, name)
+        #define enet_address_set_port(address, port)
+        #define enet_host_connect(host, address, channels, data) 0
+        #define enet_host_service(host, event, timeout) 0
+        EOF
+
     - name: Apply demo patches
       run: |
         # Stub networking init so sockets are not required
@@ -33,27 +50,10 @@ jobs:
         # Include Emscripten header in main.cpp
         echo -e "\n#ifdef __EMSCRIPTEN__\n#include <emscripten.h>\n#endif\n" >> source/src/main.cpp
 
-        # Stub ENet types/functions and includes to avoid missing enet.h
-        echo -e "\n#ifdef __EMSCRIPTEN__\n\
-        // Prevent including actual enet/enet.h\n\
-        #define _ENET_H\n\
-        typedef int ENetHost;\n\
-        typedef int ENetAddress;\n\
-        typedef int ENetPeer;\n\
-        #define enet_initialize() 0\n\
-        #define enet_deinitialize()\n\
-        #define enet_host_create(...) 0\n\
-        #define enet_host_destroy(host)\n\
-        #define enet_address_set_host(address, name)\n\
-        #define enet_address_set_port(address, port)\n\
-        #define enet_host_connect(host, address, channels, data) 0\n\
-        #define enet_host_service(host, event, timeout) 0\n\
-        #endif\n" >> source/src/clientgame.cpp
-
     - name: Build AssaultCube to WebAssembly
       run: |
         mkdir -p web-build
-        emcc source/src/*.cpp source/src/clientgame.cpp \
+        emcc -I fake_includes source/src/*.cpp source/src/clientgame.cpp \
           -I source/src \
           --preload-file source/packages \
           -O3 -s ASSERTIONS=0 -s ALLOW_MEMORY_GROWTH=1 \
