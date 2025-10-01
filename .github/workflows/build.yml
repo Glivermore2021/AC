@@ -33,23 +33,23 @@ jobs:
         # Include Emscripten header in main.cpp
         echo -e "\n#ifdef __EMSCRIPTEN__\n#include <emscripten.h>\n#endif\n" >> source/src/main.cpp
 
-    - name: Build AssaultCube with Emscripten
-      run: |
-        cd source
-        emmake make -j$(nproc) CLIENT=1 || true
-
-    - name: Package web demo
+    - name: Build AssaultCube to WebAssembly
       run: |
         mkdir -p web-build
         emcc \
-          source/src/client/assaultcube.bc \
+          source/src/main.cpp \
+          source/src/clientgame.cpp \
+          source/src/engine/*.cpp \
+          -I source/src \
+          -I source/src/engine \
           --preload-file source/packages \
           -O3 -s ASSERTIONS=0 -s ALLOW_MEMORY_GROWTH=1 \
           -s MODULARIZE=1 -s EXPORT_ES6=1 -s ENVIRONMENT=web \
           -s SINGLE_FILE=1 \
           -o web-build/assaultcube.js
 
-        # Minimal HTML loader
+    - name: Create minimal HTML loader
+      run: |
         cat > web-build/index.html <<'EOF'
         <!doctype html>
         <html>
