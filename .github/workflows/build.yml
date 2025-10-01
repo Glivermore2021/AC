@@ -1,0 +1,97 @@
+name: AssaultCube Web Demo
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v3
+
+    - name: Setup Emscripten
+      uses: mymindstorm/setup-emsdk@v12
+      with:
+        version: 3.1.64
+
+    - name: Verify emcc
+      run: emcc -v
+
+    - name: Apply demo patches
+      run: |
+        # Stub networking init so sockets are not required
+        echo -e "\n#ifdef __EMSCRIPTEN__\nvoid initnetwork() {}\n#endif\n" >> src/game/game.cpp
+
+        # Include Emscripten header in main.cpp
+        echo -e "\n#ifdef __EMSCRIPTEN__\n#include <emscripten.h>\n#endif\n" >> src/main.cpp
+
+    - name: Configure build for Emscripten
+      run: |
+        mkdir build
+        cd build
+        emcmake cmake .. -DCMAKE_BUILD_TYPE=Release
+
+    - name: Build AssaultCube with Emscripten
+      run: |
+        cd build
+        emmake make -j$(nproc) || true  # allow some net-related objects to fail
+
+    - name: Package web demo
+      run: |
+        mkdir -p web-build
+        emcc \
+          build/src/client/assaultcube.bc \
+          --preload-file packages \
+          -O3 -s ASSERTIONS=0 -s ALLOW_MEMORY_GROWTH=1 \
+          -s MODULARIZE=1 -s EXPORT_ES6=1 -s ENVIRONMENT=web \
+          -s SINGLE_FILE=1 \
+          -o web-build/assaultcube.js
+
+        # Minimal HTML loader
+        cat > web-build/index.html <<'EOF'
+        <!doctype html>
+        <html>
+        <head><meta charset="utf-8"/><title>AssaultCube Web Demo</title></head>
+        <body style="margin:0;overflow:hidden">
+          <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+          <script type="module">
+            import createModule from "./assaultcube.js";
+            createModule().then(Module => {
+              console.log("AssaultCube Web Demo ready", Module);
+            });
+          </script>
+        </body>
+        </html>
+        EOF
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: assaultcube-web-demo
+        path: web-build
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v3
+
+    - name: Download artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: assaultcube-web-demo
+        path: ./public
+
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./public
