@@ -33,8 +33,10 @@ jobs:
         # Include Emscripten header in main.cpp
         echo -e "\n#ifdef __EMSCRIPTEN__\n#include <emscripten.h>\n#endif\n" >> source/src/main.cpp
 
-        # Stub ENet types/functions to avoid missing enet.h
+        # Stub ENet types/functions and includes to avoid missing enet.h
         echo -e "\n#ifdef __EMSCRIPTEN__\n\
+        // Prevent including actual enet/enet.h\n\
+        #define _ENET_H\n\
         typedef int ENetHost;\n\
         typedef int ENetAddress;\n\
         typedef int ENetPeer;\n\
