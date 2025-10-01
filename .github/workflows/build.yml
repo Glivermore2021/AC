@@ -33,22 +33,16 @@ jobs:
         # Include Emscripten header in main.cpp
         echo -e "\n#ifdef __EMSCRIPTEN__\n#include <emscripten.h>\n#endif\n" >> source/src/main.cpp
 
-    - name: Configure build for Emscripten
-      run: |
-        mkdir build
-        cd build
-        emcmake cmake ../source -DCMAKE_BUILD_TYPE=Release
-
     - name: Build AssaultCube with Emscripten
       run: |
-        cd build
-        emmake make -j$(nproc) || true  # allow some net-related objects to fail
+        cd source
+        emmake make -j$(nproc) CLIENT=1 || true
 
     - name: Package web demo
       run: |
         mkdir -p web-build
         emcc \
-          build/src/client/assaultcube.bc \
+          source/src/client/assaultcube.bc \
           --preload-file source/packages \
           -O3 -s ASSERTIONS=0 -s ALLOW_MEMORY_GROWTH=1 \
           -s MODULARIZE=1 -s EXPORT_ES6=1 -s ENVIRONMENT=web \
