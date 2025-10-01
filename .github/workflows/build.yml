@@ -1,10 +1,7 @@
-name: AssaultCube Web Demo
+name: AssaultCube Web Demo (Singleplayer)
 
 on:
   push:
-    branches:
-      - main
-  pull_request:
     branches:
       - main
   workflow_dispatch:
@@ -25,33 +22,7 @@ jobs:
     - name: Verify emcc
       run: emcc -v
 
-    - name: Prepare fake ENet include
-      run: |
-        mkdir -p fake_includes/enet
-        cat > fake_includes/enet/enet.h <<'EOF'
-        typedef int ENetHost;
-        typedef int ENetAddress;
-        typedef int ENetPeer;
-        #define enet_initialize() 0
-        #define enet_deinitialize()
-        #define enet_host_create(...) 0
-        #define enet_host_destroy(host)
-        #define enet_address_set_host(address, name)
-        #define enet_address_set_port(address, port)
-        #define enet_host_connect(host, address, channels, data) 0
-        #define enet_host_service(host, event, timeout) 0
-        EOF
-
-        mkdir -p fake_includes/vorbis
-        cat > fake_includes/vorbis/vorbisfile.h <<'EOF'
-        typedef int OggVorbis_File;
-        typedef int vorbis_info;
-        #define ov_fopen(filename, vf) 0
-        #define ov_clear(vf) 0
-        #define ov_info(vf, link) ((vorbis_info*)0)
-        EOF
-
-    - name: Apply demo patches
+    - name: Prepare demo patches
       run: |
         # Stub networking init so sockets are not required
         echo -e "\n#ifdef __EMSCRIPTEN__\nvoid initnetwork() {}\n#endif\n" >> source/src/clientgame.cpp
@@ -59,19 +30,23 @@ jobs:
         # Include Emscripten header in main.cpp
         echo -e "\n#ifdef __EMSCRIPTEN__\n#include <emscripten.h>\n#endif\n" >> source/src/main.cpp
 
-    - name: Build AssaultCube to WebAssembly
+    - name: Build AssaultCube to WebAssembly (singleplayer-only)
       run: |
         mkdir -p web-build
-        emcc -I fake_includes source/src/*.cpp source/src/clientgame.cpp \
-        -I source/src \
-        --preload-file source/packages \
-        -O3 -s ASSERTIONS=0 -s ALLOW_MEMORY_GROWTH=1 \
-        -s MODULARIZE=1 -s EXPORT_ES6=1 -s ENVIRONMENT=web \
-        -s SINGLE_FILE=1 \
-        -s USE_ZLIB=1 \
-        -s USE_SDL=2 \
-        -s USE_SDL_IMAGE=2 \
-        -o web-build/assaultcube.js
+
+        # Compile only the main graphics/game files
+        emcc -I source/src \
+          source/src/main.cpp \
+          source/src/clientgame.cpp \
+          source/src/console.cpp \
+          source/src/engine.cpp \
+          source/src/cube.cpp \
+          -O3 -s ASSERTIONS=0 -s ALLOW_MEMORY_GROWTH=1 \
+          -s MODULARIZE=1 -s EXPORT_ES6=1 -s ENVIRONMENT=web \
+          -s SINGLE_FILE=1 \
+          -s USE_SDL=2 \
+          -s USE_SDL_IMAGE=2 \
+          -o web-build/assaultcube.js
 
     - name: Create minimal HTML loader
       run: |
