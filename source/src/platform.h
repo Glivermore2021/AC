@@ -57,12 +57,10 @@
     #ifdef __APPLE__
         #include "OpenAL/al.h"
         #include "OpenAL/alc.h"
-        #include "Vorbis/vorbisfile.h"
         #define MOD_KEYS_CTRL (KMOD_LGUI|KMOD_RGUI)
     #else
         #include "AL/al.h"
         #include "AL/alc.h"
-        #include "vorbis/vorbisfile.h"
         #define MOD_KEYS_CTRL (KMOD_LCTRL|KMOD_RCTRL)
     #endif
 
