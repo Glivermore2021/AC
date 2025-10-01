@@ -2,9 +2,11 @@ name: AssaultCube Web Demo
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
@@ -26,16 +28,16 @@ jobs:
     - name: Apply demo patches
       run: |
         # Stub networking init so sockets are not required
-        echo -e "\n#ifdef __EMSCRIPTEN__\nvoid initnetwork() {}\n#endif\n" >> src/game/game.cpp
+        echo -e "\n#ifdef __EMSCRIPTEN__\nvoid initnetwork() {}\n#endif\n" >> source/src/clientgame.cpp
 
         # Include Emscripten header in main.cpp
-        echo -e "\n#ifdef __EMSCRIPTEN__\n#include <emscripten.h>\n#endif\n" >> src/main.cpp
+        echo -e "\n#ifdef __EMSCRIPTEN__\n#include <emscripten.h>\n#endif\n" >> source/src/main.cpp
 
     - name: Configure build for Emscripten
       run: |
         mkdir build
         cd build
-        emcmake cmake .. -DCMAKE_BUILD_TYPE=Release
+        emcmake cmake ../source -DCMAKE_BUILD_TYPE=Release
 
     - name: Build AssaultCube with Emscripten
       run: |
@@ -47,7 +49,7 @@ jobs:
         mkdir -p web-build
         emcc \
           build/src/client/assaultcube.bc \
-          --preload-file packages \
+          --preload-file source/packages \
           -O3 -s ASSERTIONS=0 -s ALLOW_MEMORY_GROWTH=1 \
           -s MODULARIZE=1 -s EXPORT_ES6=1 -s ENVIRONMENT=web \
           -s SINGLE_FILE=1 \
