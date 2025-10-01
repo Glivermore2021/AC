@@ -33,20 +33,18 @@ jobs:
     - name: Build AssaultCube to WebAssembly (singleplayer-only)
       run: |
         mkdir -p web-build
-
-        # Compile only the main graphics/game files
-        emcc -vI source/src \
-          source/src/main.cpp \
-          source/src/clientgame.cpp \
-          source/src/console.cpp \
-          source/src/engine.cpp \
-          source/src/cube.cpp \
-          -O3 -s ASSERTIONS=0 -s ALLOW_MEMORY_GROWTH=1 \
-          -s MODULARIZE=1 -s EXPORT_ES6=1 -s ENVIRONMENT=web \
-          -s SINGLE_FILE=1 \
-          -s USE_SDL=2 \
-          -s USE_SDL_IMAGE=2 \
-          -o web-build/assaultcube.js
+        emcc -I source/src \
+        source/src/main.cpp \
+        source/src/clientgame.cpp \
+        source/src/console.cpp \
+        source/src/cube.cpp \
+        source/src/glemu.cpp \
+        -O3 -s ASSERTIONS=0 -s ALLOW_MEMORY_GROWTH=1 \
+        -s MODULARIZE=1 -s EXPORT_ES6=1 -s ENVIRONMENT=web \
+        -s SINGLE_FILE=1 \
+        -s USE_SDL=2 \
+        -s USE_SDL_IMAGE=2 \
+        -o web-build/assaultcube.js
 
     - name: Create minimal HTML loader
       run: |
