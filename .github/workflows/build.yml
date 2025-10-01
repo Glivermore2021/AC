@@ -26,31 +26,43 @@ jobs:
       run: |
         # Include Emscripten header in main.cpp
         echo -e "\n#ifdef __EMSCRIPTEN__\n#include <emscripten.h>\n#endif\n" >> source/src/main.cpp
+        # Stub networking init
+        echo -e "\n#ifdef __EMSCRIPTEN__\nvoid initnetwork() {}\n#endif\n" >> source/src/clientgame.cpp
+
+    - name: Patch platform.h for singleplayer
+      run: |
+        sed -i 's|#include <enet/enet.h>|// #include <enet/enet.h>|' source/src/platform.h
+        sed -i 's|#include "vorbis/vorbisfile.h"|// #include "vorbis/vorbisfile.h"|' source/src/platform.h
 
     - name: Download and build Zlib
       run: |
-        curl -LO https://zlib.net/zlib-1.3.1.tar.gz
+        mkdir -p zlib_build
+        cd zlib_build
+        wget https://zlib.net/zlib-1.3.1.tar.gz
         tar xf zlib-1.3.1.tar.gz
         cd zlib-1.3.1
-        emconfigure ./configure --static
+        emconfigure ./configure
         emmake make
-        cd ..
+        # Static library output
+        ZLIB_DIR=$(pwd)
+        echo "ZLIB_DIR=${ZLIB_DIR}" >> $GITHUB_ENV
+        cd ../../
 
     - name: Build AssaultCube to WebAssembly (singleplayer-only)
       run: |
         mkdir -p web-build
         emcc -I source/src \
-        -I zlib-1.3.1 \
-        source/src/main.cpp \
-        source/src/clientgame.cpp \
-        source/src/console.cpp \
-        -O3 -s ASSERTIONS=0 -s ALLOW_MEMORY_GROWTH=1 \
-        -s MODULARIZE=1 -s EXPORT_ES6=1 -s ENVIRONMENT=web \
-        -s SINGLE_FILE=1 \
-        -s USE_SDL=2 \
-        -s USE_SDL_IMAGE=2 \
-        zlib-1.3.1/libz.a \
-        -o web-build/assaultcube.js
+             -I $ZLIB_DIR \
+             source/src/main.cpp \
+             source/src/clientgame.cpp \
+             source/src/console.cpp \
+             -O3 -s ASSERTIONS=0 -s ALLOW_MEMORY_GROWTH=1 \
+             -s MODULARIZE=1 -s EXPORT_ES6=1 -s ENVIRONMENT=web \
+             -s SINGLE_FILE=1 \
+             -s USE_SDL=2 \
+             -s USE_SDL_IMAGE=2 \
+             $ZLIB_DIR/libz.a \
+             -o web-build/assaultcube.js
 
     - name: Create minimal HTML loader
       run: |
