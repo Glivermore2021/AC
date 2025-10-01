@@ -35,7 +35,7 @@ jobs:
         mkdir -p web-build
 
         # Compile only the main graphics/game files
-        emcc -I source/src \
+        emcc -vI source/src \
           source/src/main.cpp \
           source/src/clientgame.cpp \
           source/src/console.cpp \
