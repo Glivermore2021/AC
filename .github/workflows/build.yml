@@ -24,38 +24,33 @@ jobs:
 
     - name: Prepare demo patches
       run: |
-        # Stub networking init so sockets are not required
-        echo -e "\n#ifdef __EMSCRIPTEN__\nvoid initnetwork() {}\n#endif\n" >> source/src/clientgame.cpp
-
         # Include Emscripten header in main.cpp
         echo -e "\n#ifdef __EMSCRIPTEN__\n#include <emscripten.h>\n#endif\n" >> source/src/main.cpp
 
-    - name: Download and build zlib
+    - name: Download and build Zlib
       run: |
-        mkdir -p deps
-        cd deps
         curl -LO https://zlib.net/zlib-1.3.1.tar.gz
         tar xf zlib-1.3.1.tar.gz
         cd zlib-1.3.1
-        emconfigure ./configure
+        emconfigure ./configure --static
         emmake make
-        cd ../../
+        cd ..
 
     - name: Build AssaultCube to WebAssembly (singleplayer-only)
       run: |
         mkdir -p web-build
         emcc -I source/src \
-             -I deps/zlib-1.3.1 \
-             source/src/main.cpp \
-             source/src/clientgame.cpp \
-             source/src/console.cpp \
-             deps/zlib-1.3.1/libz.a \
-             -O3 -s ASSERTIONS=0 -s ALLOW_MEMORY_GROWTH=1 \
-             -s MODULARIZE=1 -s EXPORT_ES6=1 -s ENVIRONMENT=web \
-             -s SINGLE_FILE=1 \
-             -s USE_SDL=2 \
-             -s USE_SDL_IMAGE=2 \
-             -o web-build/assaultcube.js
+        -I zlib-1.3.1 \
+        source/src/main.cpp \
+        source/src/clientgame.cpp \
+        source/src/console.cpp \
+        -O3 -s ASSERTIONS=0 -s ALLOW_MEMORY_GROWTH=1 \
+        -s MODULARIZE=1 -s EXPORT_ES6=1 -s ENVIRONMENT=web \
+        -s SINGLE_FILE=1 \
+        -s USE_SDL=2 \
+        -s USE_SDL_IMAGE=2 \
+        zlib-1.3.1/libz.a \
+        -o web-build/assaultcube.js
 
     - name: Create minimal HTML loader
       run: |
