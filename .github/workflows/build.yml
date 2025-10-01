@@ -42,6 +42,15 @@ jobs:
         #define enet_host_service(host, event, timeout) 0
         EOF
 
+        mkdir -p fake_includes/vorbis
+        cat > fake_includes/vorbis/vorbisfile.h <<'EOF'
+        typedef int OggVorbis_File;
+        typedef int vorbis_info;
+        #define ov_fopen(filename, vf) 0
+        #define ov_clear(vf) 0
+        #define ov_info(vf, link) ((vorbis_info*)0)
+        EOF
+
     - name: Apply demo patches
       run: |
         # Stub networking init so sockets are not required
